@@ -4,11 +4,16 @@ from collections import deque
 from datetime import datetime
 import pytz
 
+# MENSAGEM DE DIAGNÓSTICO:
+print("Servidor app.py está iniciando...")
+
 app = Flask(__name__)
 socketio = SocketIO(app)
 
 dados_armazenados = deque(maxlen=100)
 fuso_horario_br = pytz.timezone('America/Fortaleza')
+
+print("Configurações iniciais carregadas.")
 
 @app.route('/')
 def index():
@@ -16,7 +21,7 @@ def index():
 
 @socketio.on('connect')
 def handle_browser_connect():
-    print('Navegador conectado!')
+    print("Navegador conectado!")
     emit('initial_data', list(dados_armazenados))
 
 @socketio.on('esp_data')
@@ -29,11 +34,12 @@ def handle_esp_data(data):
         }
         dados_armazenados.append(ponto_de_dado)
         
-        # LINHA TEMPORARIAMENTE DESATIVADA PARA TESTE:
+        # A linha de retransmissão continua desativada para nosso teste
         # socketio.emit('new_data', ponto_de_dado, broadcast=True)
 
-        # Adicionamos um print para ver os dados chegando nos logs do Render
         print(f"Dado recebido do ESP: {ponto_de_dado}")
-            
-# Removido o return do http post, pois não é mais usado
-# E a função __main__ também não é necessária no gunicorn
+
+print("Rotas e eventos configurados. Servidor pronto para rodar.")
+
+if __name__ == '__main__':
+    socketio.run(app)
