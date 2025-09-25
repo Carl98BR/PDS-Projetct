@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard IoT - Render</title>
+    <title>Dashboard IoT - Real-Time</title>
     <style>
         body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
         .chart-container { width: 80%; max-width: 900px; padding: 20px; background-color: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
     <div class="chart-container">
-        <h1>Nível de Volume do Ambiente</h1>
+        <h1>Nível de Volume do Ambiente (Real-Time)</h1>
         <canvas id="meuGrafico"></canvas>
     </div>
     <script>
@@ -31,28 +32,38 @@
             options: {
                 animation: false,
                 scales: {
-                    y: {
-                        beginAtZero: true
-                    }
+                    y: { beginAtZero: true }
                 }
             }
         });
+        
+        // 2. Conecta ao servidor WebSocket
+        const socket = io();
 
-        async function buscarDados() {
-            try {
-                const response = await fetch('/api/dados');
-                const dados = await response.json();
-                const labels = dados.map(dado => dado.timestamp);
-                const valores = dados.map(dado => dado.valor);
-                chart.data.labels = labels;
-                chart.data.datasets[0].data = valores;
-                chart.update();
-            } catch (error) {
-                console.error('Erro ao buscar dados:', error);
+        // 3. Ouve pelo histórico inicial de dados (quando a página carrega)
+        socket.on('initial_data', function(dados) {
+            const labels = dados.map(dado => dado.timestamp);
+            const valores = dados.map(dado => dado.valor);
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = valores;
+            chart.update();
+        });
+
+        // 4. Ouve por novos pontos de dados (A MÁGICA EM TEMPO REAL)
+        socket.on('new_data', function(ponto) {
+            // Adiciona o novo ponto no final do gráfico
+            chart.data.labels.push(ponto.timestamp);
+            chart.data.datasets[0].data.push(ponto.valor);
+
+            // Remove o ponto mais antigo para o gráfico "andar"
+            if (chart.data.labels.length > 100) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
             }
-        }
-        buscarDados();
-        setInterval(buscarDados, 500);
+            
+            chart.update(); // Redesenha o gráfico
+        });
+
     </script>
 </body>
 </html>

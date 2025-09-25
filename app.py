@@ -1,18 +1,24 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, render_template, jsonify, request
+from flask_socketio import SocketIO
 from collections import deque
 from datetime import datetime
 import pytz
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 dados_armazenados = deque(maxlen=100)
 fuso_horario_br = pytz.timezone('America/Fortaleza')
 
+@app.route('/')
+def index():
+    return render_template('index.html')
+
 @app.route('/dados', methods=['POST'])
-def receber_dados():
+def receber_dados_esp():
     dados_recebidos = request.get_json()
     if not dados_recebidos:
-        return jsonify({"status": "erro", "mensagem": "Nenhum dado recebido"}), 400
+        return jsonify({"status": "erro"}), 400
     
     volume = dados_recebidos.get('volume')
     if volume is not None:
@@ -22,15 +28,17 @@ def receber_dados():
         }
         dados_armazenados.append(ponto_de_dado)
         
-    return jsonify({"status": "sucesso", "mensagem": "Dados recebidos"}), 201
+        # A MÁGICA ACONTECE AQUI:
+        # Emite o novo ponto de dado para todos os navegadores conectados.
+        socketio.emit('new_data', ponto_de_dado)
+        
+    return jsonify({"status": "sucesso"}), 201
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/api/dados')
-def api_dados():
-    return jsonify(list(dados_armazenados))
+@socketio.on('connect')
+def handle_connect():
+    # Quando um novo navegador se conecta, envia o histórico de dados
+    # apenas para ele.
+    socketio.emit('initial_data', list(dados_armazenados))
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    socketio.run(app)
