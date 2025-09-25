@@ -15,7 +15,7 @@ def receber_dados_esp():
     lista_de_dados = request.get_json()
     
     if not isinstance(lista_de_dados, list):
-        return jsonify({"status": "erro", "esperava uma lista"}), 400
+        return jsonify({"status": "erro", "mensagem": "esperava uma lista"}), 400
 
     for dados in lista_de_dados:
         volume = dados.get('volume')
