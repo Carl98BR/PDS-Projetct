@@ -16,11 +16,11 @@ def receber_dados():
 
     print(f"Dados recebidos do ESP: {dados_recebidos}")
     
-    temperatura = dados_recebidos.get('temperatura')
-    if temperatura is not None:
+    volume = dados_recebidos.get('volume')
+    if volume is not None:
         ponto_de_dado = {
             "timestamp": datetime.now(fuso_horario_br).strftime('%H:%M:%S'),
-            "valor": temperatura
+            "valor": volume
         }
         dados_armazenados.append(ponto_de_dado)
         
