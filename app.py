@@ -14,17 +14,13 @@ fuso_horario_br = pytz.timezone('America/Fortaleza')
 def index():
     return render_template('index.html')
 
-# --- Eventos do SocketIO ---
-
 @socketio.on('connect')
 def handle_browser_connect():
-    # Quando um NAVEGADOR se conecta, envia o histórico de dados
     print('Navegador conectado!')
     emit('initial_data', list(dados_armazenados))
 
 @socketio.on('esp_data')
 def handle_esp_data(data):
-    # Quando o ESP32 envia dados pelo WebSocket...
     volume = data.get('volume')
     if volume is not None:
         ponto_de_dado = {
@@ -33,9 +29,11 @@ def handle_esp_data(data):
         }
         dados_armazenados.append(ponto_de_dado)
         
-        # ...nós retransmitimos esses dados para TODOS os navegadores conectados
-        # O evento que os navegadores ouvem é o 'new_data'
-        emit('new_data', ponto_de_dado, broadcast=True)
+        # LINHA TEMPORARIAMENTE DESATIVADA PARA TESTE:
+        # socketio.emit('new_data', ponto_de_dado, broadcast=True)
 
-if __name__ == '__main__':
-    socketio.run(app)
+        # Adicionamos um print para ver os dados chegando nos logs do Render
+        print(f"Dado recebido do ESP: {ponto_de_dado}")
+            
+# Removido o return do http post, pois não é mais usado
+# E a função __main__ também não é necessária no gunicorn
