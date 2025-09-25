@@ -5,7 +5,7 @@ import pytz
 
 app = Flask(__name__)
 
-dados_armazenados = deque(maxlen=50)
+dados_armazenados = deque(maxlen=100)
 fuso_horario_br = pytz.timezone('America/Fortaleza')
 
 @app.route('/dados', methods=['POST'])
@@ -13,8 +13,6 @@ def receber_dados():
     dados_recebidos = request.get_json()
     if not dados_recebidos:
         return jsonify({"status": "erro", "mensagem": "Nenhum dado recebido"}), 400
-
-    print(f"Dados recebidos do ESP: {dados_recebidos}")
     
     volume = dados_recebidos.get('volume')
     if volume is not None:
